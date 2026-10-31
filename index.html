@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Coming Soon</title>
+<style>
+  @font-face{font-family:"Montserrat";font-weight:500;src:url(montserrat-latin-500-normal.woff2) format("woff2");font-display:swap}
+  @font-face{font-family:"Montserrat";font-weight:700;src:url(montserrat-latin-700-normal.woff2) format("woff2");font-display:swap}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#040404;overflow:hidden;color:#eee;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  #view{position:fixed;inset:0;overflow:hidden}
+  /* the scene is laid out in the photo's own pixel space (2576 x 1437) and scaled to the screen */
+  #scene{position:absolute;left:0;top:0;width:2576px;height:1437px;transform-origin:0 0}
+  #scene > *{position:absolute;pointer-events:none}
+  .full{left:0;top:0;width:2576px;height:1437px}
+  img.full{display:block}
+  .base{filter:brightness(.3) saturate(.75)}
+  .lit{opacity:var(--lamp,1);
+    -webkit-mask-image:radial-gradient(ellipse 2000px 1500px at 2118px 190px,#000 0%,rgba(0,0,0,.9) 30%,rgba(0,0,0,.6) 100%);
+            mask-image:radial-gradient(ellipse 2000px 1500px at 2118px 190px,#000 0%,rgba(0,0,0,.9) 30%,rgba(0,0,0,.6) 100%)}
+  .pumpkinLit{opacity:var(--candle,1);filter:brightness(1.12) saturate(1.15);
+    -webkit-mask-image:radial-gradient(ellipse 330px 330px at 420px 965px,#000 0%,rgba(0,0,0,.95) 55%,transparent 100%);
+            mask-image:radial-gradient(ellipse 330px 330px at 420px 965px,#000 0%,rgba(0,0,0,.95) 55%,transparent 100%)}
+  .candleSpill{mix-blend-mode:screen;opacity:var(--candle,1);
+    background:radial-gradient(ellipse 420px 360px at 400px 980px,rgba(255,130,30,.28),rgba(255,110,20,.10) 50%,transparent 100%)}
+  .face{mix-blend-mode:screen}
+  .bulbGlow{mix-blend-mode:screen;opacity:var(--lamp,1);
+    background:radial-gradient(circle 120px at 2118px 184px,rgba(255,236,190,.95),rgba(255,190,90,.45) 35%,transparent 100%),
+               radial-gradient(ellipse 620px 760px at 2118px 420px,rgba(255,170,70,.22),rgba(255,150,60,.06) 55%,transparent 100%)}
+  .flash{mix-blend-mode:screen;opacity:var(--flash,0);
+    background:radial-gradient(circle 300px at 2165px 140px,rgba(190,215,255,.85),rgba(140,170,255,.25) 30%,transparent 100%),
+               radial-gradient(ellipse 1600px 1200px at 2165px 300px,rgba(170,195,255,.16),transparent 100%)}
+  .hl{mix-blend-mode:screen;opacity:var(--hl,1)}
+  .hlBeamWrap{filter:blur(22px)}
+  .hlBeam{position:absolute;left:0;top:0;width:2576px;height:1437px;
+    clip-path:polygon(1572px 668px,1572px 732px,520px 1330px,380px 760px);
+    background:radial-gradient(ellipse 1150px 520px at 1572px 700px,rgba(160,215,255,.62),rgba(130,195,255,.26) 45%,rgba(120,185,255,0) 100%)}
+  .hlLens{background:radial-gradient(ellipse 30px 44px at 1570px 700px,rgba(245,252,255,1),rgba(185,225,255,.85) 45%,rgba(140,200,255,0) 100%),
+                     radial-gradient(circle 240px at 1570px 700px,rgba(150,205,255,.45),rgba(130,190,255,.1) 45%,transparent 100%)}
+  .hlPool{background:radial-gradient(ellipse 520px 110px at 1020px 1240px,rgba(150,205,255,.38),rgba(140,200,255,.12) 55%,transparent 100%),
+                     radial-gradient(ellipse 420px 190px at 1180px 1020px,rgba(150,205,255,.2),transparent 100%)}
+  #fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .vignette{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse 120% 100% at 50% 45%,transparent 60%,rgba(0,0,0,.6) 100%),
+               linear-gradient(to bottom,rgba(0,0,0,.4),transparent 12%,transparent 88%,rgba(0,0,0,.5))}
+  .edges{position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(to bottom,#040404 var(--t0,0px),transparent var(--t1,0px),transparent var(--b1,100%),#040404 var(--b0,100%))}
+  .tagline{position:absolute;z-index:10;left:50%;bottom:5.5vh;transform:translateX(-50%);
+    font-family:"Montserrat",system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:500;
+    font-size:clamp(12px,1.3vw,21px);letter-spacing:.07em;text-transform:uppercase;color:#fff;text-align:center;
+    text-shadow:0 0 6px rgba(255,255,255,.55),0 0 18px rgba(255,236,170,.35),0 2px 14px rgba(0,0,0,.95)}
+  .tagline .line{position:absolute;left:0;top:0;width:100%;padding:0 .2em;white-space:nowrap;
+}
+  .tagline .ch{transition:opacity .14s linear}
+  .tagline .hi{color:#f3d23a;font-weight:700;text-shadow:0 0 8px rgba(243,210,58,.8),0 0 22px rgba(243,210,58,.45),0 2px 14px rgba(0,0,0,.95)}
+  .tagline .free{font-weight:700;color:#f3d23a;letter-spacing:.16em;margin-right:.45em;text-shadow:0 0 8px rgba(243,210,58,.85),0 0 24px rgba(243,210,58,.5),0 2px 14px rgba(0,0,0,.95)}
+  .tagline .bar{position:absolute;top:-.25em;bottom:-.25em;left:0;width:2px;border-radius:2px;background:#f3d23a;
+    box-shadow:0 0 10px rgba(243,210,58,.95),0 0 26px rgba(243,210,58,.6),0 0 46px rgba(243,210,58,.3);transform:translateX(var(--bx,0px))}
+  @media (orientation:portrait){ .tagline .line{white-space:normal} }
+</style>
+</head>
+<body>
+<div id="view">
+  <div id="scene">
+    <img class="full base" src="bg.jpg" alt="">
+    <img class="full lit" src="bg.jpg" alt="Graffiti wall reading SOON! with a parked motorcycle, jack-o'-lanterns and an old street lamp at night">
+    <img class="full pumpkinLit" src="bg.jpg" alt="">
+    <div class="full candleSpill"></div>
+    <img class="face" id="p1" src="p1.png" alt="" style="left:250px;top:730px;width:190px;height:172px">
+    <img class="face" id="p2" src="p2.png" alt="" style="left:242px;top:863px;width:206px;height:175px">
+    <img class="face" id="p3" src="p3.png" alt="" style="left:232px;top:1008px;width:236px;height:186px">
+    <img class="face" id="p4" src="p4.png" alt="" style="left:418px;top:972px;width:220px;height:200px">
+    <div class="full bulbGlow"></div>
+    <div class="full hl hlBeamWrap"><div class="hlBeam"></div></div>
+    <div class="full hl hlPool"></div>
+    <div class="full hl hlLens"></div>
+    <div class="full flash"></div>
+  </div>
+  <canvas id="fx"></canvas>
+  <div class="vignette"></div>
+  <div class="edges"></div>
+  <div class="tagline" id="tagline" aria-live="off">
+    <div class="line" id="slogan">Be ready to break the gap between <span class="hi">2D Pixels</span> and <span class="hi">3D Polygons</span></div>
+    <div class="line" id="free"><span class="free">Free</span>No sign-up, no limits &mdash; just drop a photo and watch it gain depth</div>
+    <span class="bar" id="bar" aria-hidden="true"></span><span class="bar" id="bar2" aria-hidden="true"></span>
+  </div>
+</div>
+
+<script>
+(() => {
+  const VW = 2576, VH = 1437;
+  const scene = document.getElementById('scene'), root = document.documentElement;
+  const faces = ['p1','p2','p3','p4'].map(id => document.getElementById(id));
+  const cv = document.getElementById('fx'), ctx = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- fit the photo to the screen ---- */
+  let s = 1, ox = 0, oy = 0, W, H, dpr;
+  function layout(){
+    W = innerWidth; H = innerHeight; dpr = Math.min(devicePixelRatio || 1, 2);
+    if (W / H >= 1){                       // landscape: cover
+      s = Math.max(W / VW, H / VH); ox = (W - VW*s) / 2; oy = (H - VH*s) / 2;
+      root.style.setProperty('--t0','0px'); root.style.setProperty('--t1','0px');
+      root.style.setProperty('--b1','100%'); root.style.setProperty('--b0','100%');
+    } else {                               // portrait: show the whole scene as a wide band
+      s = W / 2210; ox = -200*s; oy = H*0.44 - VH*s/2;
+      const top = oy, bot = oy + VH*s;
+      root.style.setProperty('--t0', top+'px'); root.style.setProperty('--t1', (top + VH*s*.06)+'px');
+      root.style.setProperty('--b1', (bot - VH*s*.06)+'px'); root.style.setProperty('--b0', bot+'px');
+    }
+    scene.style.transform = `translate(${ox}px,${oy}px) scale(${s})`;
+    cv.width = W*dpr; cv.height = H*dpr;
+  }
+  addEventListener('resize', layout); layout();
+
+  /* ---- loose lamp wire (virtual coords) ---- */
+  const wireTop = {x:2232, y:50}, wireEnd = {x:2181, y:142}, dome = {x:2150, y:122};
+  function wirePath(t){
+    const sway = Math.sin(t*1.3)*4 + Math.sin(t*3.1)*1.5;
+    return {a: wireTop, c: {x: 2262 + sway, y: 205}, b: {x: wireEnd.x + sway*.5, y: wireEnd.y}};
+  }
+
+  /* ---- lamp state ---- */
+  let lamp = 1, flash = 0;
+  let shortUntil = 0, nextShort = performance.now() + 2200, stutterAt = 0, stutterVal = 1;
+  const sparks = [];
+  function burst(n, at){
+    for (let i = 0; i < n; i++){
+      const a = -Math.PI/2 + (Math.random()-.5)*2.6;
+      const sp = 250 + Math.random()*650;
+      sparks.push({x: at.x, y: at.y, px: at.x, py: at.y, vx: Math.cos(a)*sp*.8, vy: Math.sin(a)*sp*.6 + 120,
+                   life: 0, max: .5 + Math.random()*1.1, w: 1.4 + Math.random()*2.2, bounced: false});
+    }
+  }
+  function bolt(a, b, spread){
+    const pts = [a], n = 7;
+    for (let i = 1; i < n; i++){
+      const t = i/n;
+      pts.push({x: a.x + (b.x-a.x)*t + (Math.random()-.5)*spread, y: a.y + (b.y-a.y)*t + (Math.random()-.5)*spread});
+    }
+    pts.push(b); return pts;
+  }
+
+  /* ---- candles ---- */
+  const candles = faces.map(() => ({p1: Math.random()*10, p2: Math.random()*10, v: 1, drop: 0}));
+
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min((now - last)/1000, 1/20); last = now;
+    const t = now/1000;
+
+    // slow breathing of the street lamp, plus fine flicker
+    let base = 0.66 + 0.26*Math.sin(t*2*Math.PI/7) + 0.06*Math.sin(t*2*Math.PI/2.3);
+    base *= 0.97 + 0.03*Math.sin(t*41) ;
+
+    // electrical short events
+    const wp = wirePath(t), end = wp.b;
+    if (!reduce && now > nextShort){
+      shortUntil = now + 500 + Math.random()*900;
+      nextShort = shortUntil + 2500 + Math.random()*5500;
+      burst(40 + Math.random()*40, end); flash = 1;
+    }
+    const shorting = now < shortUntil;
+    if (shorting){
+      if (now > stutterAt){
+        stutterVal = [0.04, 0.1, 1.15, 0.55, 0.02, 1.3][Math.floor(Math.random()*6)];
+        stutterAt = now + 35 + Math.random()*80;
+        if (Math.random() < .55){ burst(6 + Math.random()*14, end); flash = Math.max(flash, .5 + Math.random()*.5); }
+      }
+      lamp = stutterVal;
+    } else {
+      lamp += (base - lamp) * Math.min(dt*6, 1);          // recover smoothly after a short
+    }
+    flash *= Math.pow(0.0008, dt);
+    root.style.setProperty('--lamp', Math.max(0, Math.min(1.3, lamp)).toFixed(3));
+    root.style.setProperty('--flash', Math.min(1, flash).toFixed(3));
+
+    root.style.setProperty('--hl', (0.93 + 0.05*Math.sin(t*3.7) + 0.02*Math.sin(t*17)).toFixed(3));
+    // pumpkin candles: independent flicker
+    let sum = 0;
+    candles.forEach((c, k) => {
+      let v = 0.82 + 0.09*Math.sin(t*7.3 + c.p1) + 0.06*Math.sin(t*13.7 + c.p2) + 0.04*Math.sin(t*2.1 + c.p1*2);
+      if (Math.random() < .004) c.drop = 0.35;
+      c.drop *= Math.pow(0.02, dt);
+      v = Math.max(0.35, v - c.drop);
+      faces[k].style.opacity = v.toFixed(3);
+      sum += v;
+    });
+    root.style.setProperty('--candle', (0.6 + 0.4*sum/4).toFixed(3));
+
+    // ---- draw wire, arcs and sparks ----
+    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.setTransform(s*dpr, 0, 0, s*dpr, ox*dpr, oy*dpr);
+    ctx.globalCompositeOperation = 'source-over';
+    // cable
+    const lit = Math.max(.25, Math.min(1, lamp));
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#0d0d0d'; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(wp.a.x, wp.a.y); ctx.quadraticCurveTo(wp.c.x, wp.c.y, wp.b.x, wp.b.y); ctx.stroke();
+    ctx.strokeStyle = `rgba(120,95,70,${.35*lit})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(wp.a.x-2, wp.a.y); ctx.quadraticCurveTo(wp.c.x-3, wp.c.y-2, wp.b.x-1, wp.b.y-2); ctx.stroke();
+    // frayed copper strands
+    ctx.strokeStyle = '#b8743a'; ctx.lineWidth = 1.6;
+    [[-9,-6],[-11,1],[-7,6]].forEach(([dx,dy]) => { ctx.beginPath(); ctx.moveTo(end.x, end.y); ctx.lineTo(end.x+dx, end.y+dy); ctx.stroke(); });
+
+    ctx.globalCompositeOperation = 'lighter';
+    if (shorting && Math.random() < .7){
+      for (let k = 0; k < 2; k++){
+        const target = {x: dome.x + (Math.random()-.5)*26, y: dome.y + (Math.random()-.5)*12};
+        const pts = bolt({x:end.x-8, y:end.y}, target, 14);
+        ctx.shadowColor = 'rgba(150,190,255,1)'; ctx.shadowBlur = 22;
+        ctx.strokeStyle = 'rgba(170,200,255,.9)'; ctx.lineWidth = 4;
+        ctx.beginPath(); pts.forEach((p,i) => i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y)); ctx.stroke();
+        ctx.shadowBlur = 0; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+      // hot point
+      const g = ctx.createRadialGradient(end.x-6, end.y, 0, end.x-6, end.y, 40);
+      g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.3,'rgba(170,200,255,.6)'); g.addColorStop(1,'rgba(120,160,255,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(end.x-6, end.y, 40, 0, 6.283); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    const GROUND = 1165;
+    for (let i = sparks.length - 1; i >= 0; i--){
+      const p = sparks[i];
+      p.life += dt;
+      if (p.life > p.max){ sparks.splice(i,1); continue; }
+      p.px = p.x; p.py = p.y;
+      p.vy += 1500*dt; p.vx *= Math.pow(.6, dt);
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      if (p.y > GROUND){ p.y = GROUND; p.vy *= -0.28; p.vx *= .5; if (!p.bounced){ p.bounced = true; p.max = Math.min(p.max, p.life + .35); } }
+      const k = 1 - p.life/p.max;
+      const col = k > .7 ? `rgba(255,255,235,${k})` : k > .35 ? `rgba(255,215,120,${k})` : `rgba(255,140,50,${k})`;
+      ctx.strokeStyle = col; ctx.lineWidth = p.w * (0.5 + k*.5);
+      ctx.beginPath(); ctx.moveTo(p.px - (p.x-p.px)*1.5, p.py - (p.y-p.py)*1.5); ctx.lineTo(p.x, p.y); ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+/* ---- tagline: glowing | bars erase one message letter by letter and reveal the other ---- */
+(() => {
+  const box = document.getElementById('tagline');
+  const lines = [document.getElementById('slogan'), document.getElementById('free')];
+  const bars = [document.getElementById('bar'), document.getElementById('bar2')];
+
+  // wrap every character in its own span so letters are never cut in half
+  const chars = lines.map(l => {
+    const nodes = [], w = document.createTreeWalker(l, NodeFilter.SHOW_TEXT);
+    while (w.nextNode()) nodes.push(w.currentNode);
+    nodes.forEach(n => {
+      const f = document.createDocumentFragment();
+      for (const ch of n.textContent){ const sp = document.createElement('span'); sp.className = 'ch'; sp.textContent = ch; f.appendChild(sp); }
+      n.replaceWith(f);
+    });
+    return [...l.querySelectorAll('.ch')].map(el => ({el, c: 0, v: true}));
+  });
+
+  let W = 0;
+  const L0 = [0, 0], R0 = [0, 0], MID = [0, 0];
+  function measure(){
+    const mobile = innerHeight > innerWidth;   // portrait phones wrap; everything else stays on one line
+    if (!mobile){
+      // size the text from the page width so zooming never makes it wrap or jump
+      box.style.fontSize = '20px'; box.style.width = '10000px';
+      let nat = 0;
+      lines.forEach(l => { const r = document.createRange(); r.selectNodeContents(l); nat = Math.max(nat, r.getBoundingClientRect().width); });
+      const fs = Math.max(8, Math.min(20 * innerWidth * 0.82 / nat, innerWidth * 0.0175));
+      box.style.fontSize = fs + 'px';
+    } else box.style.fontSize = '';
+    // measure each message at its natural size in a wide, unconstrained box
+    box.style.width = (mobile ? innerWidth*0.88 : innerWidth*0.98) + 'px';
+    let w = 0, h = 0;
+    lines.forEach(l => { const r = document.createRange(); r.selectNodeContents(l); const b = r.getBoundingClientRect();
+      w = Math.max(w, b.width); h = Math.max(h, l.getBoundingClientRect().height); });
+    W = mobile ? innerWidth*0.88 : Math.ceil(w + 24);
+    box.style.width = W + 'px'; box.style.height = Math.ceil(h) + 'px';
+    const bx = box.getBoundingClientRect().left;
+    chars.forEach((list, j) => {
+      let lo = Infinity, hi = -Infinity;
+      list.forEach(o => { const r = o.el.getBoundingClientRect(); o.c = r.left + r.width/2 - bx;
+        if (o.el.textContent.trim()){ lo = Math.min(lo, r.left - bx); hi = Math.max(hi, r.right - bx); } });
+      L0[j] = lo - 8; R0[j] = hi + 8; MID[j] = (lo + hi) / 2;
+    });
+  }
+  const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3)/2;
+  const rnd = (a, b) => a + Math.random()*(b - a);
+  const lerp = (a, b, k) => a + (b - a)*k;
+  const ALL = () => true, NONE = () => false;
+
+  let show = 0, side = 'L';
+  const rest = (j, sd) => sd === 'L' ? L0[j] : R0[j];
+
+  // build the next swap as a list of segments; each returns the frame state for progress k (0..1)
+  function cycle(){
+    measure();
+    const c = show, o = 1 - show;
+    const modes = ['open', 'close', side === 'L' ? 'ltr' : 'rtl'];
+    const mode = modes[Math.floor(Math.random()*modes.length)];
+    const out = rnd(2300, 3500), inn = rnd(2300, 3500), gap = rnd(150, 600);
+    const segs = [];
+    const fadeBars = (line, xs, from, to, dur) => segs.push({dur, f: k => ({line, vis: ALL, bars: xs, opa: lerp(from, to, k)})});
+    let endSide;
+
+    if (mode === 'ltr' || mode === 'rtl'){
+      const ltr = mode === 'ltr';
+      const far = ltr ? W + 6 : -6;
+      segs.push({dur: out, f: k => { const x = lerp(rest(c, side), far, ease(k)); return {line: c, vis: ch => ltr ? ch > x : ch < x, bars: [x], opa: 1}; }});
+      segs.push({dur: gap, f: () => ({line: -1, vis: NONE, bars: [], opa: 0})});
+      endSide = ltr ? 'L' : 'R';
+      const target = rest(o, endSide);
+      segs.push({dur: inn, f: k => { const x = lerp(far, target, ease(k)); return {line: o, vis: ch => ltr ? ch > x : ch < x, bars: [x], opa: 1}; }});
+    } else {
+      // hide the resting bar, then show two bars
+      fadeBars(c, [rest(c, side)], 1, 0, 260);
+      const openOut = mode === 'open';          // open: split from the middle; close: come in from the edges
+      const aS = openOut ? MID[c] : L0[c] - 4, bS = openOut ? MID[c] : R0[c] + 4;
+      const aE = openOut ? L0[c] - 4 : MID[c], bE = openOut ? R0[c] + 4 : MID[c];
+      fadeBars(c, [aS, bS], 0, 1, 260);
+      segs.push({dur: out, f: k => { const e = ease(k), a = lerp(aS, aE, e), b = lerp(bS, bE, e);
+        return {line: c, vis: ch => openOut ? (ch < a || ch > b) : (ch > a && ch < b), bars: [a, b], opa: 1}; }});
+      segs.push({dur: gap, f: () => ({line: -1, vis: NONE, bars: [], opa: 0})});
+      // reveal the other message with the opposite motion
+      const a2S = openOut ? L0[o] - 4 : MID[o], b2S = openOut ? R0[o] + 4 : MID[o];
+      const a2E = openOut ? MID[o] : L0[o] - 4, b2E = openOut ? MID[o] : R0[o] + 4;
+      segs.push({dur: inn, f: k => { const e = ease(k), a = lerp(a2S, a2E, e), b = lerp(b2S, b2E, e);
+        return {line: o, vis: ch => openOut ? (ch < a || ch > b) : (ch > a && ch < b), bars: [a, b], opa: 1}; }});
+      fadeBars(o, [a2E, b2E], 1, 0, 280);
+      endSide = Math.random() < .5 ? 'L' : 'R';
+      fadeBars(o, [rest(o, endSide)], 0, 1, 280);
+    }
+    segs.push({dur: rnd(4200, 7200), f: () => ({line: o, vis: ALL, bars: [rest(o, endSide)], opa: 1}),
+               after: () => { show = o; side = endSide; }});
+    return segs;
+  }
+
+  let curLine = -2;
+  function render(st){
+    if (st.line !== curLine){ lines.forEach((l, j) => l.style.visibility = j === st.line ? 'visible' : 'hidden'); curLine = st.line; }
+    if (st.line >= 0) chars[st.line].forEach(o => { const v = st.vis(o.c); if (v !== o.v){ o.v = v; o.el.style.opacity = v ? 1 : 0; } });
+    bars.forEach((b, i) => {
+      if (i < st.bars.length){ b.style.display = ''; b.style.opacity = st.opa; b.style.setProperty('--bx', (st.bars[i] - 1) + 'px'); }
+      else b.style.display = 'none';
+    });
+  }
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let queue = [], segStart = 0;
+  function tick(now){
+    if (reduce){ const j = Math.floor(now/6000) % 2; render({line: j, vis: ALL, bars: [L0[j]], opa: 1}); requestAnimationFrame(tick); return; }
+    if (!queue.length){
+      queue = [{dur: rnd(3800, 6000), f: () => ({line: show, vis: ALL, bars: [rest(show, side)], opa: 1})}, ...cycle()];
+      segStart = now;
+    }
+    let sg = queue[0], t = now - segStart;
+    while (t >= sg.dur){
+      if (sg.after) sg.after();
+      queue.shift(); segStart += sg.dur; t = now - segStart;
+      if (!queue.length){ queue = cycle(); segStart = now; t = 0; }
+      sg = queue[0];
+    }
+    render(sg.f(Math.min(1, t / sg.dur)));
+    requestAnimationFrame(tick);
+  }
+  Promise.all([document.fonts ? document.fonts.load('500 16px Montserrat') : 0, document.fonts ? document.fonts.load('700 16px Montserrat') : 0])
+    .catch(() => {}).then(() => document.fonts ? document.fonts.ready : 0).then(() => { measure(); requestAnimationFrame(tick); });
+  if (window.ResizeObserver) new ResizeObserver(() => measure()).observe(document.body);
+  addEventListener('resize', measure);
+})();
+</script>
+</body>
+</html>
